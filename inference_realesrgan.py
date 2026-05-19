@@ -2,6 +2,7 @@ import argparse
 import cv2
 import glob
 import os
+import torch
 from basicsr.archs.rrdbnet_arch import RRDBNet
 from basicsr.utils.download_util import load_file_from_url
 
@@ -103,6 +104,14 @@ def main():
         model_path = [model_path, wdn_model_path]
         dni_weight = [args.denoise_strength, 1 - args.denoise_strength]
 
+    # select device: prefer CUDA, then Apple Metal (MPS), then CPU
+    device = None
+    half = not args.fp32
+    if not torch.cuda.is_available() and torch.backends.mps.is_available():
+        device = torch.device('mps')
+        half = False  # half precision is unreliable on the MPS backend
+        print('Using Apple Metal (MPS) backend with fp32 precision')
+
     # restorer
     upsampler = RealESRGANer(
         scale=netscale,
@@ -112,7 +121,8 @@ def main():
         tile=args.tile,
         tile_pad=args.tile_pad,
         pre_pad=args.pre_pad,
-        half=not args.fp32,
+        half=half,
+        device=device,
         gpu_id=args.gpu_id)
 
     if args.face_enhance:  # Use GFPGAN for face enhancement

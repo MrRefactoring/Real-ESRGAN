@@ -64,8 +64,11 @@ def upscaleImage(inputImagePath: str, modelName: str, outscale: float) -> str:
         outscale=outscale,
     )
 
+    inferenceEnv = dict(os.environ)
+    inferenceEnv.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
+
     try:
-        subprocess.run(command, check=True, cwd=repoRoot)
+        subprocess.run(command, check=True, cwd=repoRoot, env=inferenceEnv)
     finally:
         shutil.rmtree(tempInputDir, ignore_errors=True)
 
@@ -83,7 +86,12 @@ def createInterface() -> gr.Blocks:
             outputImage = gr.Image(type="filepath", label="Upscaled image")
         with gr.Row():
             modelName = gr.Dropdown(
-                choices=["RealESRGAN_x4plus", "RealESRNet_x4plus", "RealESRGAN_x4plus_anime_6B"],
+                choices=[
+                    "RealESRGAN_x4plus",
+                    "RealESRNet_x4plus",
+                    "RealESRGAN_x4plus_anime_6B",
+                    "realesr-general-x4v3",
+                ],
                 value="RealESRGAN_x4plus",
                 label="Model",
             )
